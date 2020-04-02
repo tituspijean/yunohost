@@ -1,7 +1,5 @@
 #!/bin/bash
 
-MYSQL_ROOT_PWD_FILE=/etc/yunohost/mysql
-
 # Open a connection as a user
 #
 # example: ynh_mysql_connect_as 'user' 'pass' <<< "UPDATE ...;"
@@ -44,8 +42,7 @@ ynh_mysql_execute_as_root() {
     ynh_handle_getopts_args "$@"
     database="${database:-}"
 
-    ynh_mysql_connect_as --user="root" --password="$(cat $MYSQL_ROOT_PWD_FILE)" \
-        --database="$database" <<< "$sql"
+    mysql -B "$database" <<< "$sql"
 }
 
 # Execute a command from a file as root user
@@ -65,8 +62,7 @@ ynh_mysql_execute_file_as_root() {
     ynh_handle_getopts_args "$@"
     database="${database:-}"
 
-    ynh_mysql_connect_as --user="root" --password="$(cat $MYSQL_ROOT_PWD_FILE)" \
-        --database="$database" < "$file"
+    mysql -B "$database" < "$file"
 }
 
 # Create a database and grant optionnaly privilegies to a user
@@ -126,7 +122,7 @@ ynh_mysql_dump_db() {
     # Manage arguments with getopts
     ynh_handle_getopts_args "$@"
 
-    mysqldump -u "root" -p"$(cat $MYSQL_ROOT_PWD_FILE)" --single-transaction --skip-dump-date "$database"
+    mysqldump --single-transaction --skip-dump-date "$database"
 }
 
 # Create a user
@@ -223,8 +219,7 @@ ynh_mysql_remove_db () {
 	# Manage arguments with getopts
 	ynh_handle_getopts_args "$@"
 
-	local mysql_root_password=$(cat $MYSQL_ROOT_PWD_FILE)
-	if mysqlshow -u root -p$mysql_root_password | grep -q "^| $db_name"; then	# Check if the database exists
+	if mysqlshow | grep -q "^| $db_name "; then	# Check if the database exists
 		ynh_mysql_drop_db $db_name	# Remove the database	
 	else
 		ynh_print_warn --message="Database $db_name not found"
