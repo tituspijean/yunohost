@@ -291,27 +291,6 @@ def tools_postinstall(operation_logger, domain, password, ignore_dyndns=False,
     # TODO: Improve this part by integrate ldapinit into conf_regen hook
     tools_ldapinit()
 
-    # Create required folders
-    folders_to_create = [
-        '/etc/yunohost/apps',
-        '/etc/yunohost/certs',
-        '/var/cache/yunohost/repo',
-        '/home/yunohost.backup',
-        '/home/yunohost.app'
-    ]
-
-    for folder in filter(lambda x: not os.path.exists(x), folders_to_create):
-        os.makedirs(folder)
-
-    # Change folders permissions
-    os.system('chmod 755 /home/yunohost.app')
-
-    # Init ssowat's conf.json.persistent
-    if not os.path.exists('/etc/ssowat/conf.json.persistent'):
-        write_to_json('/etc/ssowat/conf.json.persistent', {})
-
-    os.system('chmod 644 /etc/ssowat/conf.json.persistent')
-
     # Create SSL CA
     regen_conf(['ssl'], force=True)
     ssl_dir = '/usr/share/yunohost/yunohost-config/ssl/yunoCA'
@@ -362,12 +341,6 @@ def tools_postinstall(operation_logger, domain, password, ignore_dyndns=False,
         _update_apps_catalog()
     except Exception as e:
         logger.warning(str(e))
-
-    # Create the archive directory (makes it easier for people to upload backup
-    # archives, otherwise it's only created after running `yunohost backup
-    # create` once.
-    from yunohost.backup import _create_archive_dir
-    _create_archive_dir()
 
     # Init migrations (skip them, no need to run them on a fresh system)
     _skip_all_migrations()
