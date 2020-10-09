@@ -30,6 +30,7 @@ from moulinette import m18n, msettings
 from moulinette.core import MoulinetteError
 from yunohost.utils.error import YunohostError
 from moulinette.utils.log import getActionLogger
+from moulinette.utils.filesystem import write_to_file
 
 from yunohost.app import app_ssowatconf, _installed_apps, _get_app_settings
 from yunohost.regenconf import regen_conf, _force_clear_hashes, _process_regen_conf
@@ -76,7 +77,7 @@ def domain_list(exclude_subdomains=False):
     result_list = sorted(result_list, cmp_domain)
 
     return {'domains': result_list}
-  
+
     return {
         'domains': result_list,
         'main': _get_maindomain()
@@ -319,36 +320,20 @@ def domain_main_domain(operation_logger, new_main_domain=None):
     operation_logger.start()
 
     # Apply changes to ssl certs
-    ssl_key = "/etc/ssl/private/yunohost_key.pem"
-    ssl_crt = "/etc/ssl/private/yunohost_crt.pem"
-    new_ssl_key = "/etc/yunohost/certs/%s/key.pem" % new_main_domain
-    new_ssl_crt = "/etc/yunohost/certs/%s/crt.pem" % new_main_domain
-
     try:
-        if os.path.exists(ssl_key) or os.path.lexists(ssl_key):
-            os.remove(ssl_key)
-        if os.path.exists(ssl_crt) or os.path.lexists(ssl_crt):
-            os.remove(ssl_crt)
+        write_to_file('/etc/yunohost/current_host', new_main_domain)
 
-        os.symlink(new_ssl_key, ssl_key)
-        os.symlink(new_ssl_crt, ssl_crt)
-
-        _set_maindomain(new_main_domain)
+        _set_hostname(new_main_domain)
     except Exception as e:
         logger.warning("%s" % e, exc_info=1)
         raise YunohostError('main_domain_change_failed')
-
-    _set_hostname(new_main_domain)
 
     # Generate SSOwat configuration file
     app_ssowatconf()
 
     # Regen configurations
-    try:
-        with open('/etc/yunohost/installed', 'r'):
-            regen_conf()
-    except IOError:
-        pass
+    if os.path.exists('/etc/yunohost/installed'):
+        regen_conf()
 
     logger.success(m18n.n('main_domain_changed'))
 
@@ -424,12 +409,6 @@ def _get_maindomain():
     with open('/etc/yunohost/current_host', 'r') as f:
         maindomain = f.readline().rstrip()
     return maindomain
-
-
-def _set_maindomain(domain):
-    with open('/etc/yunohost/current_host', 'w') as f:
-        f.write(domain)
-
 
 def _normalize_domain_path(domain, path):
 
