@@ -32,6 +32,7 @@ from yunohost.utils.error import YunohostError
 from moulinette.utils.log import getActionLogger
 
 from yunohost.app import app_ssowatconf, _installed_apps, _get_app_settings, _get_conflicting_apps
+from yunohost.service import service_enable, service_disable, service_start, service_stop, _run_service_command
 from yunohost.regenconf import regen_conf, _force_clear_hashes, _process_regen_conf
 from yunohost.utils.network import get_public_ip
 from yunohost.log import is_unit_operation
@@ -127,6 +128,11 @@ def domain_add(operation_logger, domain, dyndns=False):
 
         # Actually subscribe
         dyndns_subscribe(domain=domain)
+
+    # mDNS config for .local domains
+    if domain.endswith(".local"):
+        service_enable("avahi-alias@"+domain+".service")
+        service_start("avahi-alias@"+domain+".service")
 
     try:
         import yunohost.certificate
@@ -240,6 +246,11 @@ def domain_remove(operation_logger, domain, force=False):
 
     regen_conf(names=['nginx', 'metronome', 'dnsmasq', 'postfix'])
     app_ssowatconf()
+
+    # mDNS config for .local domains
+    if domain.endswith(".local"):
+        service_stop("avahi-alias@"+domain+".service")
+        service_disable("avahi-alias@"+domain+".service")
 
     hook_callback('post_domain_remove', args=[domain])
 
