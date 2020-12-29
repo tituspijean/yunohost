@@ -32,7 +32,7 @@ from yunohost.utils.error import YunohostError
 from moulinette.utils.log import getActionLogger
 
 from yunohost.app import app_ssowatconf, _installed_apps, _get_app_settings, _get_conflicting_apps
-from yunohost.service import service_enable, service_disable, service_start, service_stop, _run_service_command
+from yunohost.service import service_enable, service_disable, service_start, service_stop
 from yunohost.regenconf import regen_conf, _force_clear_hashes, _process_regen_conf
 from yunohost.utils.network import get_public_ip
 from yunohost.log import is_unit_operation
